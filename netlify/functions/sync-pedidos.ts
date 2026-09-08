@@ -23,6 +23,24 @@ export default async () => {
     situacao: SITUACAO_GATILHO_PEDIDO,
   });
 
+  // DIAGNÓSTICO TEMPORÁRIO — remover depois de confirmar a causa do problema
+  // de detecção. Grava o que a função realmente está usando/recebendo, já
+  // que os logs do Netlify estão instáveis nesta sessão.
+  await sb.from("transferencias").upsert(
+    {
+      id_pedido_a: "__diagnostico__",
+      status: "erro",
+      erro: JSON.stringify({
+        cnpjUsado: CNPJ_EMPRESA_B,
+        situacaoUsada: SITUACAO_GATILHO_PEDIDO,
+        qtdPedidosEncontrados: pedidos.length,
+        pedidosEncontrados: pedidos.map((p) => ({ id: p.id, numero: p.numero, situacao: p.situacao })),
+        timestamp: new Date().toISOString(),
+      }),
+    },
+    { onConflict: "id_pedido_a" }
+  );
+
   for (const resumo of pedidos) {
     const idPedidoA = String(resumo.id);
 
