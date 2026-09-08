@@ -28,7 +28,7 @@ export const handler: Handler = async (event) => {
 
   let payload: WebhookPedidoPayload;
   try {
-    payload = JSON.parse(event.body ?? "{}");
+    payload = JSON.parse(event.body || "{}");
   } catch {
     return { statusCode: 400, body: "JSON inválido" };
   }
