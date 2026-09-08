@@ -75,6 +75,26 @@ export interface Pedido {
   itens: PedidoItem[];
 }
 
+export interface PedidoResumo {
+  id: string;
+  numero: string;
+  situacao: string;
+}
+
+export async function pesquisarPedidos(
+  empresa: Empresa,
+  params: { cpfCnpj: string; situacao?: string }
+): Promise<PedidoResumo[]> {
+  const body: Record<string, string> = { cpf_cnpj: params.cpfCnpj };
+  if (params.situacao) body.situacao = params.situacao;
+  const retorno = await tinyApi2Call<{ pedidos?: { pedido: PedidoResumo }[] }>(
+    empresa,
+    "pedidos.pesquisa",
+    body
+  );
+  return (retorno.pedidos ?? []).map((p) => p.pedido);
+}
+
 export async function obterPedido(empresa: Empresa, idPedido: string): Promise<Pedido> {
   const retorno = await tinyApi2Call<{ pedido: Pedido }>(empresa, "pedido.obter", {
     id: idPedido,
