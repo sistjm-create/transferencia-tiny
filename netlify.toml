@@ -1,0 +1,7 @@
+[build]
+  command = "echo 'sem build de frontend - somente Netlify Functions'"
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
