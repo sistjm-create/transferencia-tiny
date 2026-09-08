@@ -91,17 +91,20 @@ export async function darEntradaEstoqueProduto(
   params: {
     idProduto: string;
     quantidade: string;
-    deposito: string;
+    deposito?: string;
     observacoes: string;
   }
 ): Promise<void> {
-  const estoque = {
+  const estoque: Record<string, string> = {
     idProduto: params.idProduto,
     tipo: "E",
     quantidade: params.quantidade,
-    deposito: params.deposito,
     observacoes: params.observacoes,
   };
+  // Contas com um único estoque geral não têm depósito para informar.
+  if (params.deposito) {
+    estoque.deposito = params.deposito;
+  }
   await tinyApi2Call(empresa, "produto.atualizar.estoque", {
     estoque: JSON.stringify(estoque),
   });

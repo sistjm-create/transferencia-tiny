@@ -65,8 +65,10 @@ cp .env.example .env
 ```
 
 Preencha `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, os dois tokens Tiny,
-`CNPJ_EMPRESA_B`, `SITUACAO_GATILHO_PEDIDO`, `DEPOSITO_ID_EMPRESA_B` e
-`WEBHOOK_SECRET` (valor aleatório qualquer). As mesmas variáveis precisam
+`CNPJ_EMPRESA_B`, `SITUACAO_GATILHO_PEDIDO` e `WEBHOOK_SECRET` (valor
+aleatório qualquer). `DEPOSITO_ID_EMPRESA_B` só é necessário se a conta B
+tiver múltiplos depósitos de estoque configurados — deixe em branco se ela
+usa só um estoque geral (caso deste projeto). As mesmas variáveis precisam
 ser cadastradas no painel do Netlify (**Site settings > Environment
 variables**) antes do deploy.
 
