@@ -119,6 +119,24 @@ export async function lancarEstoquePedido(empresa: Empresa, idPedido: string): P
   }
 }
 
+export async function buscarIdProdutoPorCodigo(empresa: Empresa, codigo: string): Promise<string> {
+  const retorno = await tinyApi2Call<{ produtos?: { produto: { id: string; codigo: string } }[] }>(
+    empresa,
+    "produtos.pesquisa",
+    { pesquisa: codigo }
+  );
+  const produtos = (retorno.produtos ?? []).map((p) => p.produto);
+  // A pesquisa é por texto (nome ou código), então filtra pelo código exato
+  // pra não pegar outro produto cujo nome/código só contenha esse texto.
+  const encontrado = produtos.find((p) => p.codigo === codigo);
+  if (!encontrado) {
+    throw new Error(
+      `Produto com código "${codigo}" não encontrado na empresa ${empresa} (cadastro precisa existir nas duas contas com o mesmo código).`
+    );
+  }
+  return encontrado.id;
+}
+
 export async function darEntradaEstoqueProduto(
   empresa: Empresa,
   params: {
