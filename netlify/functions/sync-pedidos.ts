@@ -3,8 +3,6 @@ import {
   pesquisarPedidos,
   obterPedido,
   lancarEstoquePedido,
-  buscarIdProdutoPorCodigo,
-  obterProduto,
   darEntradaEstoqueProduto,
 } from "../../src/lib/tiny";
 import { supabaseAdmin } from "../../src/lib/supabaseAdmin";
@@ -79,33 +77,16 @@ async function avancarTransferencia(registro: Transferencia) {
   if (registro.status === "estoque_baixado_em_a") {
     const pedido = await obterPedido("a", idPedidoA);
 
-    // O idProduto interno não é o mesmo entre as contas — cada uma tem seu
-    // próprio cadastro/ID, mesmo no multiempresa. O código do produto
-    // (SKU) é o mesmo nas duas, então é usado para achar o idProduto
-    // correto em B antes de dar entrada no estoque.
+    // O id interno do produto é sempre diferente entre as contas, mesmo no
+    // multiempresa — só o código (SKU) é compartilhado. Por isso a entrada
+    // em B usa o código do item direto, em vez de tentar mapear pra um id.
     for (const { item } of pedido.itens) {
-      const idProdutoB = await buscarIdProdutoPorCodigo("b", item.codigo);
-      try {
-        await darEntradaEstoqueProduto("b", {
-          idProduto: idProdutoB,
-          quantidade: item.quantidade,
-          deposito: DEPOSITO_ID_EMPRESA_B,
-          observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
-        });
-      } catch (err: any) {
-        // Contexto extra (código buscado, id encontrado em B, e o que a
-        // própria API vê ao consultar esse produto) pra diagnosticar sem
-        // depender só da mensagem crua do Tiny.
-        let produtoB: unknown;
-        try {
-          produtoB = await obterProduto("b", idProdutoB);
-        } catch (err2: any) {
-          produtoB = `obterProduto falhou: ${err2?.message ?? err2}`;
-        }
-        throw new Error(
-          `Falha ao dar entrada no produto (codigo="${item.codigo}", idProdutoB="${idProdutoB}"): ${err?.message ?? err} | produtoB=${JSON.stringify(produtoB)}`
-        );
-      }
+      await darEntradaEstoqueProduto("b", {
+        codigo: item.codigo,
+        quantidade: item.quantidade,
+        deposito: DEPOSITO_ID_EMPRESA_B,
+        observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
+      });
     }
 
     await sb
