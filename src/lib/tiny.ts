@@ -45,9 +45,13 @@ async function tinyApi2Call<T>(
   const json = (await res.json()) as { retorno: RetornoBase & T };
   const retorno = json.retorno;
   if (retorno.status !== "OK") {
-    const mensagens = (retorno.erros ?? []).map((e) => e.erro).join("; ");
+    const mensagens = (retorno.erros ?? []).map((e) => e.erro).filter(Boolean).join("; ");
+    // Alguns endpoints retornam o motivo em formatos diferentes de
+    // `erros[].erro` (ex.: aninhado em `registros`). Nesses casos, inclui o
+    // JSON completo em vez de só o status_processamento genérico, pra dar
+    // pra diagnosticar sem depender dos logs do Netlify.
     throw new Error(
-      `Tiny API v2 (empresa ${empresa}) ${servico} retornou erro: ${mensagens || retorno.status_processamento}`
+      `Tiny API v2 (empresa ${empresa}) ${servico} retornou erro: ${mensagens || JSON.stringify(retorno)}`
     );
   }
   return retorno;
