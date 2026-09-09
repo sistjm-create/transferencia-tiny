@@ -103,7 +103,16 @@ export async function obterPedido(empresa: Empresa, idPedido: string): Promise<P
 }
 
 export async function lancarEstoquePedido(empresa: Empresa, idPedido: string): Promise<void> {
-  await tinyApi2Call(empresa, "pedido.lancar.estoque", { id: idPedido });
+  try {
+    await tinyApi2Call(empresa, "pedido.lancar.estoque", { id: idPedido });
+  } catch (err: any) {
+    // Contas com a configuração "baixar estoque ao aprovar o pedido" já
+    // baixam o estoque sozinhas ao atingir SITUACAO_GATILHO_PEDIDO — a
+    // chamada explícita então chega tarde e o Tiny recusa. O objetivo
+    // (estoque baixado em A) já está cumprido nesse caso.
+    if (String(err?.message ?? err).includes("Estoque já lançado")) return;
+    throw err;
+  }
 }
 
 export async function darEntradaEstoqueProduto(
