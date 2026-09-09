@@ -119,46 +119,20 @@ export async function lancarEstoquePedido(empresa: Empresa, idPedido: string): P
   }
 }
 
-export async function obterProduto(empresa: Empresa, idProduto: string): Promise<Record<string, unknown>> {
-  const retorno = await tinyApi2Call<{ produto: Record<string, unknown> }>(empresa, "produto.obter", {
-    id: idProduto,
-  });
-  return retorno.produto;
-}
-
-export async function buscarIdProdutoPorCodigo(empresa: Empresa, codigo: string): Promise<string> {
-  const retorno = await tinyApi2Call<{ produtos?: { produto: { id: string; codigo: string } }[] }>(
-    empresa,
-    "produtos.pesquisa",
-    { pesquisa: codigo }
-  );
-  const produtos = (retorno.produtos ?? []).map((p) => p.produto);
-  // A pesquisa é por texto (nome ou código), então filtra pelo código exato
-  // pra não pegar outro produto cujo nome/código só contenha esse texto.
-  const encontrado = produtos.find((p) => p.codigo === codigo);
-  if (!encontrado) {
-    throw new Error(
-      `Produto com código "${codigo}" não encontrado na empresa ${empresa} (cadastro precisa existir nas duas contas com o mesmo código).`
-    );
-  }
-  return encontrado.id;
-}
-
 export async function darEntradaEstoqueProduto(
   empresa: Empresa,
   params: {
-    idProduto: string;
+    codigo: string;
     quantidade: string;
     deposito?: string;
     observacoes: string;
   }
 ): Promise<void> {
-  // idProduto e quantidade como número (não string) no JSON — o Tiny
-  // recusava com "Campo idProduto inválido" mesmo com um id válido e
-  // existente, de forma idêntica pra qualquer valor, o que apontava pra um
-  // problema de formato (campo entre aspas) em vez do valor em si.
+  // Usa o código (SKU) em vez de idProduto — o id interno é sempre
+  // diferente entre as duas contas, mas o código é o mesmo, e o Tiny
+  // aceita esse campo como alternativa ao idProduto nesse endpoint.
   const estoque: Record<string, unknown> = {
-    idProduto: Number(params.idProduto),
+    codigo: params.codigo,
     tipo: "E",
     quantidade: Number(params.quantidade),
     observacoes: params.observacoes,
