@@ -153,17 +153,26 @@ export async function darEntradaEstoqueProduto(
     observacoes: string;
   }
 ): Promise<void> {
-  const estoque: Record<string, string> = {
-    idProduto: params.idProduto,
+  // idProduto e quantidade como número (não string) no JSON — o Tiny
+  // recusava com "Campo idProduto inválido" mesmo com um id válido e
+  // existente, de forma idêntica pra qualquer valor, o que apontava pra um
+  // problema de formato (campo entre aspas) em vez do valor em si.
+  const estoque: Record<string, unknown> = {
+    idProduto: Number(params.idProduto),
     tipo: "E",
-    quantidade: params.quantidade,
+    quantidade: Number(params.quantidade),
     observacoes: params.observacoes,
   };
   // Contas com um único estoque geral não têm depósito para informar.
   if (params.deposito) {
     estoque.deposito = params.deposito;
   }
-  await tinyApi2Call(empresa, "produto.atualizar.estoque", {
-    estoque: JSON.stringify(estoque),
-  });
+  const estoqueJson = JSON.stringify(estoque);
+  try {
+    await tinyApi2Call(empresa, "produto.atualizar.estoque", {
+      estoque: estoqueJson,
+    });
+  } catch (err: any) {
+    throw new Error(`${err?.message ?? err} | payload enviado: estoque=${estoqueJson}`);
+  }
 }
