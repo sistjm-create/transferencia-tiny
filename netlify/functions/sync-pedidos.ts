@@ -84,12 +84,20 @@ async function avancarTransferencia(registro: Transferencia) {
     // correto em B antes de dar entrada no estoque.
     for (const { item } of pedido.itens) {
       const idProdutoB = await buscarIdProdutoPorCodigo("b", item.codigo);
-      await darEntradaEstoqueProduto("b", {
-        idProduto: idProdutoB,
-        quantidade: item.quantidade,
-        deposito: DEPOSITO_ID_EMPRESA_B,
-        observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
-      });
+      try {
+        await darEntradaEstoqueProduto("b", {
+          idProduto: idProdutoB,
+          quantidade: item.quantidade,
+          deposito: DEPOSITO_ID_EMPRESA_B,
+          observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
+        });
+      } catch (err: any) {
+        // Contexto extra (código buscado e id encontrado em B) pra
+        // diagnosticar sem depender só da mensagem crua do Tiny.
+        throw new Error(
+          `Falha ao dar entrada no produto (codigo="${item.codigo}", idProdutoB="${idProdutoB}"): ${err?.message ?? err}`
+        );
+      }
     }
 
     await sb
