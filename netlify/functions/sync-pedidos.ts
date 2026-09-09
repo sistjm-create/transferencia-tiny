@@ -18,38 +18,10 @@ function onlyDigits(v: string) {
 export default async () => {
   const sb = supabaseAdmin();
 
-  // DIAGNÓSTICO TEMPORÁRIO — remover depois de confirmar a causa do problema
-  // de detecção. Grava o que a função realmente está usando/recebendo (e
-  // qualquer erro da chamada à API do Tiny), já que os logs do Netlify estão
-  // instáveis nesta sessão.
-  let pedidos: Awaited<ReturnType<typeof pesquisarPedidos>> = [];
-  let erroPesquisa: string | null = null;
-  try {
-    pedidos = await pesquisarPedidos("a", {
-      cpfCnpj: CNPJ_EMPRESA_B,
-      situacao: SITUACAO_GATILHO_PEDIDO,
-    });
-  } catch (err: any) {
-    erroPesquisa = String(err?.message ?? err);
-  }
-
-  await sb.from("transferencias").upsert(
-    {
-      id_pedido_a: "__diagnostico__",
-      status: "erro",
-      erro: JSON.stringify({
-        cnpjUsado: CNPJ_EMPRESA_B,
-        situacaoUsada: SITUACAO_GATILHO_PEDIDO,
-        qtdPedidosEncontrados: pedidos.length,
-        pedidosEncontrados: pedidos.map((p) => ({ id: p.id, numero: p.numero, situacao: p.situacao })),
-        erroPesquisa,
-        timestamp: new Date().toISOString(),
-      }),
-    },
-    { onConflict: "id_pedido_a" }
-  );
-
-  if (erroPesquisa) return;
+  const pedidos = await pesquisarPedidos("a", {
+    cpfCnpj: CNPJ_EMPRESA_B,
+    situacao: SITUACAO_GATILHO_PEDIDO,
+  });
 
   for (const resumo of pedidos) {
     const idPedidoA = String(resumo.id);
