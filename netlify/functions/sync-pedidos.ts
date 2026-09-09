@@ -1,5 +1,11 @@
 import type { Config } from "@netlify/functions";
-import { pesquisarPedidos, obterPedido, lancarEstoquePedido, darEntradaEstoqueProduto } from "../../src/lib/tiny";
+import {
+  pesquisarPedidos,
+  obterPedido,
+  lancarEstoquePedido,
+  buscarIdProdutoPorCodigo,
+  darEntradaEstoqueProduto,
+} from "../../src/lib/tiny";
 import { supabaseAdmin } from "../../src/lib/supabaseAdmin";
 import type { Transferencia } from "../../src/lib/supabaseAdmin";
 
@@ -72,11 +78,14 @@ async function avancarTransferencia(registro: Transferencia) {
   if (registro.status === "estoque_baixado_em_a") {
     const pedido = await obterPedido("a", idPedidoA);
 
-    // ATENÇÃO: idProduto assumido igual nas duas contas (cadastro
-    // compartilhado no multiempresa), confirmado pelo usuário.
+    // O idProduto interno não é o mesmo entre as contas — cada uma tem seu
+    // próprio cadastro/ID, mesmo no multiempresa. O código do produto
+    // (SKU) é o mesmo nas duas, então é usado para achar o idProduto
+    // correto em B antes de dar entrada no estoque.
     for (const { item } of pedido.itens) {
+      const idProdutoB = await buscarIdProdutoPorCodigo("b", item.codigo);
       await darEntradaEstoqueProduto("b", {
-        idProduto: item.id_produto,
+        idProduto: idProdutoB,
         quantidade: item.quantidade,
         deposito: DEPOSITO_ID_EMPRESA_B,
         observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
