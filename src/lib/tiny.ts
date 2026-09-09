@@ -119,6 +119,13 @@ export async function lancarEstoquePedido(empresa: Empresa, idPedido: string): P
   }
 }
 
+export async function obterProduto(empresa: Empresa, idProduto: string): Promise<Record<string, unknown>> {
+  const retorno = await tinyApi2Call<{ produto: Record<string, unknown> }>(empresa, "produto.obter", {
+    id: idProduto,
+  });
+  return retorno.produto;
+}
+
 export async function buscarIdProdutoPorCodigo(empresa: Empresa, codigo: string): Promise<string> {
   const retorno = await tinyApi2Call<{ produtos?: { produto: { id: string; codigo: string } }[] }>(
     empresa,

@@ -4,6 +4,7 @@ import {
   obterPedido,
   lancarEstoquePedido,
   buscarIdProdutoPorCodigo,
+  obterProduto,
   darEntradaEstoqueProduto,
 } from "../../src/lib/tiny";
 import { supabaseAdmin } from "../../src/lib/supabaseAdmin";
@@ -92,10 +93,17 @@ async function avancarTransferencia(registro: Transferencia) {
           observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,
         });
       } catch (err: any) {
-        // Contexto extra (código buscado e id encontrado em B) pra
-        // diagnosticar sem depender só da mensagem crua do Tiny.
+        // Contexto extra (código buscado, id encontrado em B, e o que a
+        // própria API vê ao consultar esse produto) pra diagnosticar sem
+        // depender só da mensagem crua do Tiny.
+        let produtoB: unknown;
+        try {
+          produtoB = await obterProduto("b", idProdutoB);
+        } catch (err2: any) {
+          produtoB = `obterProduto falhou: ${err2?.message ?? err2}`;
+        }
         throw new Error(
-          `Falha ao dar entrada no produto (codigo="${item.codigo}", idProdutoB="${idProdutoB}"): ${err?.message ?? err}`
+          `Falha ao dar entrada no produto (codigo="${item.codigo}", idProdutoB="${idProdutoB}"): ${err?.message ?? err} | produtoB=${JSON.stringify(produtoB)}`
         );
       }
     }
