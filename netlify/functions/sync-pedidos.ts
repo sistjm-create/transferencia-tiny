@@ -3,6 +3,7 @@ import {
   pesquisarPedidos,
   obterPedido,
   lancarEstoquePedido,
+  buscarIdProdutoPorCodigo,
   darEntradaEstoqueProduto,
 } from "../../src/lib/tiny";
 import { supabaseAdmin } from "../../src/lib/supabaseAdmin";
@@ -78,11 +79,13 @@ async function avancarTransferencia(registro: Transferencia) {
     const pedido = await obterPedido("a", idPedidoA);
 
     // O id interno do produto é sempre diferente entre as contas, mesmo no
-    // multiempresa — só o código (SKU) é compartilhado. Por isso a entrada
-    // em B usa o código do item direto, em vez de tentar mapear pra um id.
+    // multiempresa — só o código (SKU) é compartilhado. A API exige
+    // idProduto (não aceita código direto nesse endpoint), então busca o
+    // id correto em B pelo código antes de dar entrada no estoque.
     for (const { item } of pedido.itens) {
+      const idProdutoB = await buscarIdProdutoPorCodigo("b", item.codigo);
       await darEntradaEstoqueProduto("b", {
-        codigo: item.codigo,
+        idProduto: idProdutoB,
         quantidade: item.quantidade,
         deposito: DEPOSITO_ID_EMPRESA_B,
         observacoes: `Transferência automática referente ao pedido #${pedido.numero} (id ${idPedidoA}) da Empresa A.`,

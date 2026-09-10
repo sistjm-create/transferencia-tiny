@@ -119,22 +119,47 @@ export async function lancarEstoquePedido(empresa: Empresa, idPedido: string): P
   }
 }
 
+export async function buscarIdProdutoPorCodigo(empresa: Empresa, codigo: string): Promise<string> {
+  const retorno = await tinyApi2Call<{ produtos?: { produto: { id: string; codigo: string } }[] }>(
+    empresa,
+    "produtos.pesquisa",
+    { pesquisa: codigo }
+  );
+  const produtos = (retorno.produtos ?? []).map((p) => p.produto);
+  // A pesquisa é por texto (nome ou código), então filtra pelo código exato
+  // pra não pegar outro produto cujo nome/código só contenha esse texto.
+  const encontrado = produtos.find((p) => p.codigo === codigo);
+  if (!encontrado) {
+    throw new Error(
+      `Produto com código "${codigo}" não encontrado na empresa ${empresa} (cadastro precisa existir nas duas contas com o mesmo código).`
+    );
+  }
+  return encontrado.id;
+}
+
+function agoraFormatoTiny(): string {
+  // Formato exigido pela API: "AAAA-MM-DD HH:MM:SS".
+  return new Date().toISOString().slice(0, 19).replace("T", " ");
+}
+
 export async function darEntradaEstoqueProduto(
   empresa: Empresa,
   params: {
-    codigo: string;
+    idProduto: string;
     quantidade: string;
     deposito?: string;
     observacoes: string;
   }
 ): Promise<void> {
-  // Usa o código (SKU) em vez de idProduto — o id interno é sempre
-  // diferente entre as duas contas, mas o código é o mesmo, e o Tiny
-  // aceita esse campo como alternativa ao idProduto nesse endpoint.
+  // idProduto como string (conforme exemplo oficial da documentação) e com
+  // o campo "data" preenchido — a documentação mostra esse campo presente
+  // em todo exemplo, e sua ausência aparentemente fazia o Tiny recusar o
+  // lançamento inteiro com uma mensagem enganosa sobre o idProduto.
   const estoque: Record<string, unknown> = {
-    codigo: params.codigo,
+    idProduto: params.idProduto,
     tipo: "E",
-    quantidade: Number(params.quantidade),
+    data: agoraFormatoTiny(),
+    quantidade: params.quantidade,
     observacoes: params.observacoes,
   };
   // Contas com um único estoque geral não têm depósito para informar.
